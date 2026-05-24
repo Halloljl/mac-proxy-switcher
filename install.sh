@@ -14,30 +14,41 @@ PROXY_HOST="127.0.0.1"
 PROXY_HTTP_PORT="7890"
 PROXY_SOCKS_PORT="7891"
 CONFIG_FILE="$HOME/.zshrc"
-BACKUP_FILE="$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
+BACKUP_FILE=""
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}  🦀 macOS 终端智能代理切换工具${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 
-# 检测当前 shell 和配置文件
-if [ -n "$ZSH_VERSION" ]; then
-    SHELL_TYPE="zsh"
-    CONFIG_FILE="$HOME/.zshrc"
-elif [ -n "$BASH_VERSION" ]; then
-    SHELL_TYPE="bash"
-    CONFIG_FILE="$HOME/.bashrc"
+# 检测登录 shell（新终端用哪个 shell，就写哪个配置文件）
+if [ "$(uname)" = "Darwin" ]; then
+    LOGIN_SHELL=$(dscl . -read /Users/$(whoami) UserShell 2>/dev/null | awk '{print $2}')
 else
-    echo -e "${YELLOW}⚠️  未检测到 zsh 或 bash，默认使用 zsh 配置${NC}"
-    SHELL_TYPE="zsh"
-    CONFIG_FILE="$HOME/.zshrc"
+    LOGIN_SHELL="${SHELL:-$0}"
 fi
 
-echo -e "${BLUE}📝 检测到 Shell: ${SHELL_TYPE}${NC}"
+case "$LOGIN_SHELL" in
+    *zsh*)
+        SHELL_TYPE="zsh"
+        CONFIG_FILE="$HOME/.zshrc"
+        ;;
+    *bash*)
+        SHELL_TYPE="bash"
+        CONFIG_FILE="$HOME/.bashrc"
+        ;;
+    *)
+        echo -e "${YELLOW}⚠️  未检测到 zsh 或 bash，默认使用 zsh 配置${NC}"
+        SHELL_TYPE="zsh"
+        CONFIG_FILE="$HOME/.zshrc"
+        ;;
+esac
+
+echo -e "${BLUE}📝 检测到登录 Shell: ${SHELL_TYPE}${NC}"
 echo -e "${BLUE}📝 配置文件: ${CONFIG_FILE}${NC}\n"
 
 # 备份原有配置
 if [ -f "$CONFIG_FILE" ]; then
+    BACKUP_FILE="${CONFIG_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
     echo -e "${YELLOW}💾 备份原有配置到: ${BACKUP_FILE}${NC}"
     cp "$CONFIG_FILE" "$BACKUP_FILE"
 fi
@@ -184,7 +195,7 @@ echo -e "  ${GREEN}proxy-help${NC}    - 显示帮助信息\n"
 
 echo -e "${YELLOW}💡 提示:${NC}"
 echo -e "  • 每次打开新终端会自动检测 Clash 状态"
-echo -e "  • 如需修改代理端口，编辑 ~/.zshrc 中的 PROXY_HTTP_PORT 变量"
+echo -e "  • 如需修改代理端口，编辑 ${CONFIG_FILE} 中的 PROXY_HTTP_PORT 变量"
 echo -e "  • 备份文件已保存至: ${BACKUP_FILE}\n"
 
 # 询问是否测试
