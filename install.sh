@@ -196,7 +196,8 @@ echo -e "  ${GREEN}proxy-help${NC}    - 显示帮助信息\n"
 echo -e "${YELLOW}💡 提示:${NC}"
 echo -e "  • 每次打开新终端会自动检测 Clash 状态"
 echo -e "  • 如需修改代理端口，编辑 ${CONFIG_FILE} 中的 PROXY_HTTP_PORT 变量"
-echo -e "  • 备份文件已保存至: ${BACKUP_FILE}\n"
+echo -e "  • 备份文件已保存至: ${BACKUP_FILE}"
+echo -e "  • 在当前终端执行 ${BLUE}source ${CONFIG_FILE}${NC} 立即启用命令\n"
 
 # 询问是否测试
 if [ -t 0 ]; then
