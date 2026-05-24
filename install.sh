@@ -168,7 +168,7 @@ fi
 # 加载新配置
 echo -e "${BLUE}🔄 加载新配置...${NC}"
 # shellcheck source=/dev/null
-source "$CONFIG_FILE"
+source "$CONFIG_FILE" || true
 
 echo -e "\n${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}  ✅ 安装成功！${NC}"
@@ -188,10 +188,14 @@ echo -e "  • 如需修改代理端口，编辑 ~/.zshrc 中的 PROXY_HTTP_PORT
 echo -e "  • 备份文件已保存至: ${BACKUP_FILE}\n"
 
 # 询问是否测试
-read -p "是否立即测试代理连通性？(y/n): " -n 1 -r
+if [ -t 0 ]; then
+    read -p "是否立即测试代理连通性？(y/n): " -n 1 -r
 echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    proxy-test
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        proxy-test
+    fi
+else
+    echo -e "${BLUE}💡 提示: 运行 'proxy-test' 可测试代理连通性${NC}"
 fi
 
 echo -e "\n${GREEN}🎉 安装完成！享受智能代理切换吧~${NC}\n"
