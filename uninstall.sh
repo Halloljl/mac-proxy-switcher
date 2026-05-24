@@ -11,26 +11,47 @@ NC='\033[0m'
 
 echo -e "${YELLOW}🗑️  卸载 macOS 终端代理切换工具...${NC}\n"
 
-# 检测当前 shell 并清理对应的配置文件
+# 清理指定配置文件中的代理切换工具配置（支持新旧两种格式）
 clean_config() {
     local config_file="$1"
-    if [ ! -f "$config_file" ]; then
-        return
+    [ ! -f "$config_file" ] && return
+
+    # 用 Python 检测并移除代理配置块（兼容新旧格式）
+    python3 -c "
+import sys
+path = '$config_file'
+with open(path) as f:
+    lines = f.readlines()
+
+# 检测是否有代理切换工具配置
+has_new = any('# === mac-proxy-switcher ===' in l for l in lines)
+has_old = any('auto_set_proxy()' in l for l in lines)
+if not has_new and not has_old:
+    sys.exit(0)
+
+# 定位并移除配置块
+if has_new:
+    start = next(i for i, l in enumerate(lines) if '# === mac-proxy-switcher ===' in l)
+    end = next(i for i, l in enumerate(lines) if '# === /mac-proxy-switcher ===' in l)
+else:
+    start = next(i for i, l in enumerate(lines) if '智能代理' in l)
+    end = next(i for i, l in enumerate(lines) if l.strip() == 'auto_set_proxy' and i > start)
+
+# 包含尾部空行
+while end + 1 < len(lines) and lines[end + 1].strip() == '':
+    end += 1
+
+new_lines = lines[:start] + lines[end+1:]
+import shutil
+shutil.copy2(path, path + '.backup.' + __import__('datetime').datetime.now().strftime('%Y%m%d_%H%M%S'))
+with open(path, 'w') as f:
+    f.writelines(new_lines)
+print('cleaned')
+" 2>/dev/null
+
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ 已清理 ${config_file} 中的代理切换工具配置${NC}"
     fi
-    if ! grep -q "# === mac-proxy-switcher ===" "$config_file" 2>/dev/null; then
-        return
-    fi
-
-    # 备份
-    local backup_file="${config_file}.backup.$(date +%Y%m%d_%H%M%S)"
-    cp "$config_file" "$backup_file"
-    echo -e "${GREEN}💾 已备份 ${config_file} 到: ${backup_file}${NC}"
-
-    # 移除配置块
-    sed -i.tmp '/# === mac-proxy-switcher ===/,/# === \/mac-proxy-switcher ===/d' "$config_file"
-    rm -f "${config_file}.tmp"
-
-    echo -e "${GREEN}✅ 已从 ${config_file} 中移除代理切换工具配置${NC}"
 }
 
 clean_config "$HOME/.zshrc"
